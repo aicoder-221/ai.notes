@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel → Image Reconstruction — Class XII AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --cream:#f5f0e8; --cream2:#ede8de; --cream3:#e4ddd0;
+  --ink:#1a1510; --ink2:#3d3628; --ink3:#6b6050;
+  --red:#d63b2f; --blue:#2563c4; --green:#1a7a4a; --amber:#c47a1a;
+  --paper:#faf7f2; --line:rgba(26,21,16,0.12); --sw:242px;
+}
+html { scroll-behavior:smooth; }
+body { background:var(--cream); color:var(--ink); font-family:'Plus Jakarta Sans',sans-serif; display:flex; min-height:100vh; overflow:hidden; }
+
+/* ── SIDEBAR ── */
+#sb { width:var(--sw); min-height:100vh; background:var(--ink); position:fixed; top:0; left:0; display:flex; flex-direction:column; z-index:100; }
+.sb-brand { padding:22px 20px 18px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sb-badge { font-family:'IBM Plex Mono',monospace; font-size:0.54rem; letter-spacing:0.15em; color:rgba(255,255,255,0.28); text-transform:uppercase; margin-bottom:7px; }
+.sb-title { font-family:'Playfair Display',serif; font-size:1rem; font-weight:900; color:#fff; line-height:1.35; }
+.sb-title span { color:#f5c842; }
+.sb-nav { padding:10px 0; flex:1; overflow-y:auto; }
+.sb-grp { font-family:'IBM Plex Mono',monospace; font-size:0.53rem; letter-spacing:0.18em; color:rgba(255,255,255,0.2); text-transform:uppercase; padding:12px 20px 4px; }
+.sb-link { display:flex; align-items:center; gap:9px; padding:9px 20px; text-decoration:none; color:rgba(255,255,255,0.42); font-size:0.77rem; font-weight:600; border-left:3px solid transparent; cursor:pointer; transition:color .18s,background .18s,border-color .18s; }
+.sb-link:hover { color:#fff; background:rgba(255,255,255,0.05); border-left-color:rgba(245,200,66,0.5); }
+.sb-link.on { color:#fff; background:rgba(245,200,66,0.1); border-left-color:#f5c842; }
+.sb-link .ico { font-size:0.88rem; width:17px; text-align:center; }
+.sb-foot { padding:12px 20px; border-top:1px solid rgba(255,255,255,0.07); font-family:'IBM Plex Mono',monospace; font-size:0.53rem; color:rgba(255,255,255,0.17); line-height:1.9; }
+
+/* ── MAIN ── */
+#main { margin-left:var(--sw); flex:1; height:100vh; overflow-y:auto; }
+.sec { display:none; padding:46px 50px 68px; min-height:100vh; animation:fadeIn .28s ease; }
+.sec.on { display:block; }
+#s-home.on { display:flex; flex-direction:column; justify-content:center; min-height:100vh; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:none} }
+
+/* ── TYPOGRAPHY ── */
+.eyebrow { font-family:'IBM Plex Mono',monospace; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--red); margin-bottom:10px; }
+.sec-h { font-family:'Playfair Display',serif; font-size:clamp(1.8rem,3.5vw,2.7rem); font-weight:900; line-height:1.12; margin-bottom:12px; }
+.sec-lead { font-size:.91rem; color:var(--ink3); max-width:580px; line-height:1.88; margin-bottom:32px; }
+.rule { border:none; border-top:2px solid var(--line); margin:28px 0; }
+
+/* ── HOME ── */
+.hero-kicker { display:inline-flex; align-items:center; gap:8px; background:var(--ink); color:#f5c842; font-family:'IBM Plex Mono',monospace; font-size:0.63rem; letter-spacing:0.1em; padding:6px 14px; border-radius:4px; margin-bottom:22px; }
+.hero-big { font-family:'Playfair Display',serif; font-size:clamp(2.4rem,4.8vw,4.2rem); font-weight:900; line-height:1.02; margin-bottom:16px; }
+.hero-big em { font-style:italic; color:var(--red); }
+.hero-sub { font-size:.94rem; color:var(--ink3); line-height:1.88; max-width:500px; margin-bottom:30px; }
+.chips { display:flex; flex-wrap:wrap; gap:9px; }
+.chip { background:var(--cream2); border:1.5px solid var(--line); color:var(--ink2); border-radius:6px; padding:7px 14px; font-size:0.77rem; font-weight:600; cursor:pointer; transition:background .18s,border-color .18s,transform .18s,color .18s; }
+.chip:hover { background:var(--ink); color:#f5c842; border-color:var(--ink); transform:translateY(-2px); }
+.hero-stats { margin-top:36px; display:grid; grid-template-columns:repeat(4,1fr); gap:12px; max-width:620px; }
+.stat-b { background:var(--cream2); border:1.5px solid var(--line); border-radius:10px; padding:16px; }
+.stat-b .n { font-family:'Playfair Display',serif; font-size:1.8rem; font-weight:900; color:var(--ink); }
+.stat-b .l { font-size:0.7rem; color:var(--ink3); margin-top:3px; }
+
+/* ── CARDS ── */
+.icard { background:var(--paper); border:1.5px solid var(--line); border-radius:14px; padding:20px; }
+.icard h3 { font-family:'Playfair Display',serif; font-size:1.08rem; font-weight:900; margin-bottom:8px; }
+.icard p { font-size:.82rem; color:var(--ink3); line-height:1.72; margin-bottom:10px; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
+.three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.fbox { background:var(--ink); color:#a8e6cf; border-radius:8px; padding:11px 14px; font-family:'IBM Plex Mono',monospace; font-size:0.69rem; line-height:1.82; white-space:pre; overflow-x:auto; }
+.fbox.gold { color:#f5c842; }
+.fbox.coral { color:#ffb3b3; }
+.tag { display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:0.58rem; letter-spacing:0.08em; background:var(--cream2); border:1px solid var(--line); border-radius:4px; padding:2px 8px; color:var(--ink3); }
+.tag.red { background:#fde8e8; color:var(--red); border-color:rgba(214,59,47,.2); }
+.tag.green { background:#e8f5ed; color:var(--green); border-color:rgba(26,122,74,.2); }
+.tag.blue { background:#e8edf8; color:var(--blue); border-color:rgba(37,99,196,.2); }
+
+/* ── BUTTONS ── */
+.zbtn { padding:6px 13px; border:1.5px solid var(--line); background:transparent; border-radius:7px; font-family:'IBM Plex Mono',monospace; font-size:0.6rem; color:var(--ink3); cursor:pointer; transition:all .15s; }
+.zbtn:hover { border-color:var(--ink); color:var(--ink); background:var(--cream2); }
+.zbtn.on { background:var(--ink); color:var(--cream); border-color:var(--ink); }
+.res-btns { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.ctrl-btn { background:var(--paper); border:1.5px solid var(--line); color:var(--ink2); padding:8px 18px; border-radius:8px; font-family:'Plus Jakarta Sans',sans-serif; font-size:0.78rem; font-weight:700; cursor:pointer; transition:all .15s; margin-right:7px; }
+.ctrl-btn:hover { background:var(--ink); color:#f5c842; border-color:var(--ink); }
+.ctrl-btn:disabled { opacity:0.35; cursor:default; }
+
+/* ── RGB MIXER ── */
+.rgb-mixer { background:var(--paper); border:1.5px solid var(--line); border-radius:14px; padding:20px; }
+.big-pixel { width:110px; height:110px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:.58rem; text-align:center; line-height:1.9; box-shadow:0 10px 36px rgba(0,0,0,0.16); border:1.5px solid var(--line); flex-shrink:0; transition:background .1s; }
+.sl-row { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
+.sl-row label { font-family:'IBM Plex Mono',monospace; font-size:.65rem; font-weight:700; width:14px; }
+.sl-row label.r{color:var(--red);} .sl-row label.g{color:var(--green);} .sl-row label.b{color:var(--blue);}
+.sl-row input[type=range] { flex:1; height:4px; border-radius:2px; cursor:pointer; outline:none; -webkit-appearance:none; appearance:none; }
+.sl-row input::-webkit-slider-thumb { -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--ink); cursor:pointer; }
+.sl-row span { font-family:'IBM Plex Mono',monospace; font-size:.63rem; color:var(--ink3); width:28px; text-align:right; }
+.color-swatch { width:100%; height:58px; border-radius:9px; margin-bottom:13px; border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:.66rem; transition:background .1s; }
+
+/* ── PIXEL GRIDS ── */
+.pgrid { display:grid; gap:2px; width:fit-content; }
+.px { width:26px; height:26px; border-radius:3px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:6px; font-weight:500; border:1px solid rgba(0,0,0,0.07); transition:transform .14s,box-shadow .14s; }
+.px:hover { transform:scale(1.45); z-index:10; position:relative; box-shadow:0 6px 18px rgba(0,0,0,0.22); }
+
+/* ── MATRIX ── */
+.matrix-wrap { background:var(--paper); border:1.5px solid var(--line); border-radius:14px; padding:18px; overflow-x:auto; }
+.mtable { border-collapse:separate; border-spacing:3px; }
+.mtable td { font-family:'IBM Plex Mono',monospace; font-size:0.56rem; padding:5px 6px; border-radius:5px; text-align:center; cursor:pointer; border:1px solid rgba(0,0,0,0.05); transition:transform .14s,box-shadow .14s; }
+.mtable td:hover { transform:scale(1.3); z-index:5; position:relative; box-shadow:0 4px 14px rgba(0,0,0,0.18); }
+.cell-r{color:#b91c1c;} .cell-g{color:#166534;} .cell-b{color:#1d4ed8;}
+
+/* ── RECONSTRUCTION ── */
+.recon-grid { display:grid; gap:2px; border-radius:10px; overflow:hidden; border:1.5px solid var(--line); }
+.rpx { height:22px; background:var(--cream2); transition:background .04s; }
+.prog-bar { height:5px; background:var(--cream3); border-radius:3px; margin-top:10px; overflow:hidden; }
+.prog-fill { height:100%; background:var(--red); border-radius:3px; width:0%; transition:width .08s; }
+.stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:11px; margin-top:18px; }
+.stat-c { background:var(--paper); border:1.5px solid var(--line); border-radius:10px; padding:13px 15px; }
+.stat-c .sv { font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:900; color:var(--ink); }
+.stat-c .sl { font-size:0.7rem; color:var(--ink3); margin-top:2px; }
+
+/* ── DRAW ── */
+.draw-grid { display:grid; gap:2px; cursor:crosshair; width:fit-content; }
+.dpx { width:30px; height:30px; border-radius:3px; background:var(--cream2); border:1px solid rgba(0,0,0,0.08); transition:background .06s; }
+.dpx:hover { border-color:var(--ink); }
+.palette { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.pal-c { width:30px; height:30px; border-radius:6px; cursor:pointer; border:2px solid transparent; transition:transform .14s,border-color .14s; }
+.pal-c.on,.pal-c:hover { transform:scale(1.18); border-color:var(--ink); }
+.draw-output { background:var(--ink); color:#a8e6cf; border-radius:8px; padding:11px 14px; font-family:'IBM Plex Mono',monospace; font-size:0.6rem; line-height:1.88; white-space:pre; overflow-x:auto; max-height:250px; overflow-y:auto; }
+
+/* ── IMAGE TYPES TAB ── */
+.tabs { display:flex; gap:4px; margin-bottom:22px; flex-wrap:wrap; }
+.tbtn { padding:7px 16px; border:1.5px solid var(--line); background:transparent; border-radius:8px; font-family:'Plus Jakarta Sans',sans-serif; font-size:0.77rem; font-weight:600; color:var(--ink3); cursor:pointer; transition:all .18s; }
+.tbtn:hover { border-color:var(--ink); color:var(--ink); background:var(--cream2); }
+.tbtn.on { background:var(--ink); color:var(--cream); border-color:var(--ink); }
+.tpane { display:none; }
+.tpane.on { display:grid; grid-template-columns:auto 1fr; gap:24px; align-items:start; }
+
+/* ── COLOUR CHANNELS ── */
+.channel-stack { display:flex; flex-direction:column; gap:6px; }
+.ch-layer { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:10px; border:1.5px solid var(--line); cursor:pointer; transition:border-color .18s,background .18s; }
+.ch-layer:hover,.ch-layer.on { border-color:var(--ink); background:var(--cream2); }
+.ch-layer .ch-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+.ch-layer h4 { font-size:.85rem; font-weight:700; margin-bottom:2px; }
+.ch-layer p { font-size:.75rem; color:var(--ink3); }
+.ch-preview { display:grid; gap:2px; border-radius:8px; overflow:hidden; border:1.5px solid var(--line); width:fit-content; }
+.ch-px { width:22px; height:22px; }
+
+/* ── NOISE SECTION ── */
+.noise-compare { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.noise-panel { background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:16px; text-align:center; }
+.noise-panel h4 { font-size:.85rem; font-weight:700; margin-bottom:10px; }
+.noise-grid { display:grid; gap:1px; margin:0 auto 10px; width:fit-content; }
+.npx { width:20px; height:20px; border-radius:2px; }
+.noise-slider-row { display:flex; align-items:center; gap:10px; margin-top:12px; }
+.noise-slider-row label { font-family:'IBM Plex Mono',monospace; font-size:.62rem; color:var(--ink3); white-space:nowrap; }
+.noise-slider-row input { flex:1; }
+.noise-slider-row span { font-family:'IBM Plex Mono',monospace; font-size:.62rem; color:var(--ink3); width:22px; }
+
+/* ── COMPRESSION ── */
+.comp-visual { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.comp-card { background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:14px; text-align:center; cursor:pointer; transition:border-color .18s,transform .18s; }
+.comp-card:hover { border-color:var(--ink); transform:translateY(-2px); }
+.comp-card.on { border-color:var(--red); background:var(--cream2); }
+.comp-grid { display:grid; gap:1px; margin:0 auto 10px; border-radius:4px; overflow:hidden; border:1px solid var(--line); width:fit-content; }
+.comp-px { width:14px; height:14px; }
+.comp-card .qlabel { font-family:'IBM Plex Mono',monospace; font-size:.6rem; color:var(--ink3); margin-bottom:5px; }
+.comp-card .qval { font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:900; }
+.comp-card .qsub { font-size:.7rem; color:var(--ink3); margin-top:2px; }
+
+/* ── FILTER / KERNEL ── */
+.kernel-area { display:flex; flex-direction:column; gap:14px; }
+.kernel-btns { display:flex; gap:6px; flex-wrap:wrap; }
+.kbtn { padding:7px 14px; border:1.5px solid var(--line); background:transparent; border-radius:7px; font-family:'IBM Plex Mono',monospace; font-size:0.6rem; color:var(--ink3); cursor:pointer; transition:all .15s; }
+.kbtn:hover { border-color:var(--ink); color:var(--ink); background:var(--cream2); }
+.kbtn.on { background:var(--ink); color:var(--cream); border-color:var(--ink); }
+.kernel-grid { display:grid; grid-template-columns:repeat(3,44px); gap:3px; }
+.k-cell { width:44px; height:44px; background:var(--cream2); border:1.5px solid var(--line); border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:.75rem; font-weight:700; color:var(--ink); transition:background .2s,color .2s; }
+.k-cell.pos { background:#d4f5e2; color:var(--green); border-color:rgba(26,122,74,.25); }
+.k-cell.neg { background:#fde8e8; color:var(--red); border-color:rgba(214,59,47,.25); }
+.k-cell.zero { background:var(--cream3); color:var(--ink3); }
+.filter-demo { display:grid; gap:2px; width:fit-content; }
+.fd-px { width:28px; height:28px; border-radius:3px; border:1px solid rgba(0,0,0,.06); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:6.5px; cursor:pointer; position:relative; transition:all .15s; }
+.fd-px.highlight { outline:2px solid var(--red); outline-offset:1px; z-index:5; transform:scale(1.08); }
+.fd-px.kernel-over { outline:2px solid var(--amber); outline-offset:1px; opacity:0.85; }
+
+/* ── RESOLUTION vs SIZE ── */
+.res-size-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+.rs-card { background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:16px; cursor:pointer; transition:border-color .18s,transform .18s; }
+.rs-card:hover { border-color:var(--ink); transform:translateY(-2px); }
+.rs-card.on { border-color:var(--red); }
+.rs-canvas { display:grid; gap:1px; margin:0 auto 12px; border-radius:4px; overflow:hidden; border:1px solid var(--line); width:fit-content; }
+.rs-px { border-radius:1px; }
+.rs-label { font-family:'IBM Plex Mono',monospace; font-size:.6rem; color:var(--ink3); text-align:center; }
+.rs-val { font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:900; text-align:center; margin-bottom:3px; }
+
+/* ── QUIZ ── */
+.qprog { height:4px; background:var(--cream2); border-radius:2px; margin-bottom:26px; overflow:hidden; }
+.qbar { height:100%; background:var(--ink); border-radius:2px; transition:width .35s ease; }
+.qcard { background:var(--paper); border:1.5px solid var(--line); border-radius:16px; padding:26px; max-width:640px; }
+.qnum { font-family:'IBM Plex Mono',monospace; font-size:.58rem; color:var(--ink3); letter-spacing:.1em; text-transform:uppercase; margin-bottom:9px; }
+.qtxt { font-size:.97rem; font-weight:700; line-height:1.5; margin-bottom:18px; }
+.qopts { display:flex; flex-direction:column; gap:7px; }
+.qopt { background:var(--cream2); border:1.5px solid var(--line); border-radius:9px; padding:10px 15px; font-size:.84rem; font-weight:500; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink); transition:border-color .16s,background .16s,transform .13s; }
+.qopt:hover:not(:disabled) { border-color:var(--ink); background:var(--cream); transform:translateX(4px); }
+.qopt.ok { background:#d4f5e2; border-color:var(--green); color:var(--green); }
+.qopt.no { background:#fde8e8; border-color:var(--red); color:var(--red); }
+.qopt:disabled { cursor:default; }
+.qfb { margin-top:13px; padding:10px 13px; border-radius:8px; font-size:.8rem; line-height:1.65; display:none; }
+.qfb.show { display:block; }
+.qfb.g { background:#d4f5e2; color:var(--green); }
+.qfb.b { background:#fde8e8; color:var(--red); }
+.qnxt { margin-top:14px; background:var(--ink); color:var(--cream); border:none; border-radius:7px; padding:9px 22px; font-family:inherit; font-weight:700; font-size:.84rem; cursor:pointer; display:none; transition:transform .13s; }
+.qnxt:hover { transform:translateY(-2px); }
+.qsc { background:var(--paper); border:1.5px solid var(--line); border-radius:16px; padding:40px 26px; text-align:center; display:none; max-width:400px; }
+.qsc .big { font-family:'Playfair Display',serif; font-size:4.5rem; font-weight:900; }
+.qsc .msg { font-size:.89rem; color:var(--ink3); margin:8px 0 20px; }
+.qrs { background:var(--ink); color:var(--cream); border:none; border-radius:7px; padding:9px 22px; font-family:inherit; font-weight:700; cursor:pointer; transition:transform .13s; }
+.qrs:hover { transform:translateY(-2px); }
+
+/* ── TAKEAWAY ── */
+.takeaway { background:var(--cream2); border:2px solid var(--line); border-radius:14px; padding:20px 24px; margin-top:24px; }
+.takeaway h3 { font-family:'Playfair Display',serif; font-size:1rem; font-weight:900; margin-bottom:12px; }
+.tk-li { display:flex; align-items:flex-start; gap:9px; font-size:.82rem; color:var(--ink3); line-height:1.65; margin-bottom:8px; }
+.tk-li:last-child { margin-bottom:0; }
+.tk-li::before { content:'→'; color:var(--red); font-family:'IBM Plex Mono',monospace; font-weight:700; flex-shrink:0; margin-top:1px; }
+
+/* ── TOOLTIP ── */
+#tip { position:fixed; background:var(--ink); color:#f5c842; border-radius:6px; padding:6px 11px; font-family:'IBM Plex Mono',monospace; font-size:.61rem; pointer-events:none; z-index:9999; opacity:0; transition:opacity .12s; white-space:nowrap; }
+
+/* ── MOBILE ── */
+.ham { display:none; position:fixed; top:14px; left:14px; z-index:200; background:var(--ink); border:none; border-radius:7px; width:38px; height:38px; cursor:pointer; flex-direction:column; align-items:center; justify-content:center; gap:5px; }
+.ham span { width:16px; height:2px; background:var(--cream); border-radius:1px; display:block; }
+@media(max-width:860px){
+  :root{--sw:0px;}
+  #sb{transform:translateX(-242px);transition:transform .25s;width:242px;}
+  #sb.open{transform:translateX(0);}
+  #main{margin-left:0;}
+  .ham{display:flex!important;}
+  .sec{padding:30px 18px 56px;}
+  .two-col,.three-col,.noise-compare,.comp-visual,.res-size-grid{grid-template-columns:1fr;}
+  .tpane.on{grid-template-columns:1fr;}
+  .hero-stats{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div id="tip"></div>
+<button class="ham" onclick="document.getElementById('sb').classList.toggle('open')"><span></span><span></span><span></span></button>
+
+<!-- ══════════════════════════════════════════════ SIDEBAR ══ -->
+<nav id="sb">
+  <div class="sb-brand">
+    <div class="sb-badge">CBSE · Class XII · AI 843</div>
+    <div class="sb-title">Pixel →<br><span>Image</span><br>Reconstruction</div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-grp">Start Here</div>
+    <a class="sb-link on" data-s="s-home"><span class="ico">🏠</span>Introduction</a>
+    <div class="sb-grp">Core Concepts</div>
+    <a class="sb-link" data-s="s-pixel"><span class="ico">🔴</span>What is a Pixel?</a>
+    <a class="sb-link" data-s="s-types"><span class="ico">🖤</span>Image Types</a>
+    <a class="sb-link" data-s="s-grid"><span class="ico">🔲</span>Image as a Grid</a>
+    <a class="sb-link" data-s="s-matrix"><span class="ico">📊</span>Pixel Matrix</a>
+    <a class="sb-link" data-s="s-channels"><span class="ico">🌈</span>Colour Channels</a>
+    <a class="sb-link" data-s="s-recon"><span class="ico">▶️</span>Reconstruction</a>
+    <div class="sb-grp">Advanced</div>
+    <a class="sb-link" data-s="s-noise"><span class="ico">📡</span>Noise &amp; Preprocessing</a>
+    <a class="sb-link" data-s="s-compress"><span class="ico">🗜️</span>Compression</a>
+    <a class="sb-link" data-s="s-ressize"><span class="ico">📐</span>Resolution vs Size</a>
+    <a class="sb-link" data-s="s-filter"><span class="ico">🔍</span>Pixel Filters</a>
+    <div class="sb-grp">Activity &amp; Revision</div>
+    <a class="sb-link" data-s="s-draw"><span class="ico">🎨</span>Draw Your Own</a>
+    <a class="sb-link" data-s="s-quiz"><span class="ico">✏️</span>Quick Quiz</a>
+  </div>
+  <div class="sb-foot">Unit 3 · Interactive Lab<br>Class XII AI Subject 843</div>
+</nav>
+
+<!-- ══════════════════════════════════════════════ MAIN ══ -->
+<main id="main">
+
+<!-- ─── HOME ─── -->
+<section class="sec on" id="s-home">
+  <div class="hero-kicker">🖼 Unit 3 · Complete Pixel &amp; Image Lab</div>
+  <h1 class="hero-big">Pixels are<br><em>instructions,</em><br>not pictures.</h1>
+  <p class="hero-sub">From a single pixel's three numbers to filters, compression and noise — interact with every concept. No scrolling, no skipping. Pick a topic from the left and learn it fully.</p>
+  <div class="chips">
+    <div class="chip" onclick="go('s-pixel')">🔴 Pixel Basics</div>
+    <div class="chip" onclick="go('s-types')">🖤 Image Types</div>
+    <div class="chip" onclick="go('s-channels')">🌈 Channels</div>
+    <div class="chip" onclick="go('s-noise')">📡 Noise</div>
+    <div class="chip" onclick="go('s-compress')">🗜️ Compression</div>
+    <div class="chip" onclick="go('s-filter')">🔍 Filters</div>
+    <div class="chip" onclick="go('s-draw')">🎨 Draw</div>
+    <div class="chip" onclick="go('s-quiz')">✏️ Quiz</div>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-b"><div class="n">12</div><div class="l">Interactive topics</div></div>
+    <div class="stat-b"><div class="n">3</div><div class="l">Values per RGB pixel</div></div>
+    <div class="stat-b"><div class="n">16M+</div><div class="l">Possible colours</div></div>
+    <div class="stat-b"><div class="n">10</div><div class="l">Quiz questions</div></div>
+  </div>
+</section>
+
+<!-- ─── WHAT IS A PIXEL ─── -->
+<section class="sec" id="s-pixel">
+  <div class="eyebrow">Concept 01</div>
+  <h2 class="sec-h">What Exactly Is a Pixel?</h2>
+  <p class="sec-lead">A pixel (picture element) is the <strong>smallest unit of an image</strong> — a tiny coloured square storing three numbers: <span style="color:var(--red);font-weight:700">Red</span>, <span style="color:var(--green);font-weight:700">Green</span>, <span style="color:var(--blue);font-weight:700">Blue</span>, each from 0–255. Drag the sliders to mix any colour.</p>
+  <div class="two-col" style="margin-bottom:24px">
+    <div class="rgb-mixer">
+      <div class="color-swatch" id="cprev" style="background:rgb(210,80,120);color:#fff">(210, 80, 120)</div>
+      <div class="sl-row"><label class="r">R</label><input type="range" id="sr" min="0" max="255" value="210" style="background:linear-gradient(90deg,#fde8e8,#d63b2f)"><span id="vr">210</span></div>
+      <div class="sl-row"><label class="g">G</label><input type="range" id="sg" min="0" max="255" value="80" style="background:linear-gradient(90deg,#e8f5ed,#1a7a4a)"><span id="vg">80</span></div>
+      <div class="sl-row"><label class="b">B</label><input type="range" id="sb2" min="0" max="255" value="120" style="background:linear-gradient(90deg,#e8edf8,#2563c4)"><span id="vb">120</span></div>
+      <div style="display:flex;align-items:center;gap:18px;margin-top:16px">
+        <div class="big-pixel" id="bigpx" style="background:rgb(210,80,120);color:#fff"><div id="bigpx-lbl" style="line-height:2">(210,80,120)<br>R=210<br>G=80<br>B=120</div></div>
+        <p style="font-size:.78rem;color:var(--ink3);line-height:1.85">← This is<br><strong>one pixel.</strong><br>Drag sliders<br>to change it.</p>
+      </div>
+    </div>
+    <div>
+      <div class="icard" style="margin-bottom:14px">
+        <h3>Colour mixing rules</h3>
+        <div class="fbox gold">R=255, G=0,   B=0   → 🔴 Red
+R=0,   G=255, B=0   → 🟢 Green
+R=0,   G=0,   B=255 → 🔵 Blue
+R=255, G=255, B=0   → 🟡 Yellow
+R=255, G=0,   B=255 → 🟣 Magenta
+R=0,   G=255, B=255 → 🩵 Cyan
+R=255, G=255, B=255 → ⬜ White
+R=0,   G=0,   B=0   → ⬛ Black</div>
+      </div>
+      <div class="icard">
+        <h3>Memory cost</h3>
+        <div class="fbox">Each channel  →  1 byte (0–255)
+1 pixel       →  3 bytes
+1 MP image    →  ~3 MB (raw)
+12 MP phone   →  ~36 MB (raw)</div>
+      </div>
+    </div>
+  </div>
+  <div class="takeaway">
+    <h3>Key Takeaway</h3>
+    <div class="tk-li">Every pixel stores exactly 3 integers — no colour names, only numbers.</div>
+    <div class="tk-li">The range is 0 (none) to 255 (maximum) for each of Red, Green, Blue.</div>
+    <div class="tk-li">Combining 256 × 256 × 256 = 16,777,216 possible colours from just three numbers.</div>
+  </div>
+</section>
+
+<!-- ─── IMAGE TYPES ─── -->
+<section class="sec" id="s-types">
+  <div class="eyebrow">Concept 02</div>
+  <h2 class="sec-h">Three Types of Digital Images</h2>
+  <p class="sec-lead">Not all images use RGB. <strong>Click each type</strong> to see how pixels are stored differently — and why each type is used in specific situations.</p>
+  <div class="tabs">
+    <button class="tbtn on" data-t="t-bin">⬛ Binary</button>
+    <button class="tbtn" data-t="t-gray">🌑 Grayscale</button>
+    <button class="tbtn" data-t="t-rgb">🌈 RGB Colour</button>
+  </div>
+
+  <!-- Binary -->
+  <div id="t-bin" class="tpane on">
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">8×8 binary image — click to toggle</div>
+      <div id="bin-grid" class="pgrid" style="grid-template-columns:repeat(8,26px)"></div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--ink3);margin-top:8px;">Values: 0 = ⬛ Black · 1 = ⬜ White</p>
+    </div>
+    <div class="icard">
+      <h3>Binary Image</h3>
+      <p>Each pixel is either <strong>0 (black)</strong> or <strong>1 (white)</strong> — just 1 bit per pixel. Used where colour is irrelevant and speed matters.</p>
+      <div class="fbox" style="margin-bottom:12px">Pixel ∈ {0, 1}
+Bits per pixel: 1
+Memory (8×8): 8 bytes
+
+Use cases:
+  • OCR (document scanning)
+  • Barcode / QR reading
+  • Edge detection output
+  • Fingerprint matching</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="tag">1 bit per pixel</span>
+        <span class="tag">Fastest to process</span>
+        <span class="tag green">Smallest file size</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grayscale -->
+  <div id="t-gray" class="tpane">
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">8×8 grayscale — hover to see brightness</div>
+      <div id="gray-grid" class="pgrid" style="grid-template-columns:repeat(8,26px)"></div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--ink3);margin-top:8px;">Values: 0 = Black → 255 = White</p>
+    </div>
+    <div class="icard">
+      <h3>Grayscale Image</h3>
+      <p>Each pixel is a single <strong>brightness value</strong> from 0 (black) to 255 (white). No colour — just how bright each point is.</p>
+      <div class="fbox" style="margin-bottom:12px">Pixel ∈ {0 ... 255}
+Bytes per pixel: 1
+Array shape: [H, W]
+
+vs RGB: 3× smaller!
+
+Use cases:
+  • Medical scans (X-ray, MRI)
+  • Face detection (faster)
+  • Satellite thermal imaging
+  • Night-vision cameras</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="tag">1 byte per pixel</span>
+        <span class="tag green">3× smaller than RGB</span>
+        <span class="tag">Shape: [H, W]</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RGB -->
+  <div id="t-rgb" class="tpane">
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">8×8 RGB — hover to inspect</div>
+      <div id="rgb-grid" class="pgrid" style="grid-template-columns:repeat(8,26px)"></div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--ink3);margin-top:8px;">Values: (R, G, B) per pixel</p>
+    </div>
+    <div class="icard">
+      <h3>RGB Colour Image</h3>
+      <p>Each pixel stores <strong>three values</strong> — Red, Green, Blue. The most common image format. Every photo, video frame, and website uses this.</p>
+      <div class="fbox" style="margin-bottom:12px">Pixel = (R, G, B)
+Bytes per pixel: 3
+Array shape: [H, W, 3]
+
+16,777,216 colours possible
+
+Use cases:
+  • All photographs
+  • Video frames
+  • Computer vision input
+  • Display screens</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="tag">3 bytes per pixel</span>
+        <span class="tag blue">Shape: [H, W, 3]</span>
+        <span class="tag">16M+ colours</span>
+      </div>
+    </div>
+  </div>
+  <div class="takeaway" style="margin-top:24px">
+    <h3>Comparison at a Glance</h3>
+    <div class="tk-li">Binary: 1 bit/pixel → fastest, smallest. Grayscale: 1 byte/pixel → 3× smaller than RGB. RGB: 3 bytes/pixel → full colour.</div>
+    <div class="tk-li">Converting RGB to Grayscale: brightness = 0.299R + 0.587G + 0.114B (human eyes are most sensitive to green).</div>
+    <div class="tk-li">Exam tip: Grayscale array shape is [H, W]. RGB array shape is [H, W, 3]. Binary is [H, W] with values only 0 or 1.</div>
+  </div>
+</section>
+
+<!-- ─── IMAGE AS GRID ─── -->
+<section class="sec" id="s-grid">
+  <div class="eyebrow">Concept 03</div>
+  <h2 class="sec-h">The Image Is a Grid of Pixels</h2>
+  <p class="sec-lead">A photo is millions of pixels in rows and columns. Switch resolution to see how <strong>more pixels = more detail</strong>. Hover any pixel to inspect its RGB values.</p>
+  <div class="res-btns">
+    <button class="zbtn on" data-res="4">4×4 (very pixelated)</button>
+    <button class="zbtn" data-res="8">8×8</button>
+    <button class="zbtn" data-res="12">12×12</button>
+    <button class="zbtn" data-res="16">16×16 (smoother)</button>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">Pixel grid — hover any square</div>
+      <div id="grid-container"></div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--ink3);margin-top:8px;">Each square = 1 pixel with its own (R,G,B)</p>
+    </div>
+    <div>
+      <div class="icard" style="margin-bottom:14px">
+        <h3>Selected pixel info</h3>
+        <div class="fbox" id="px-detail">Hover a pixel →
+to inspect values.
+
+Position: —
+R: —   G: —   B: —
+Hex: —</div>
+        <div style="width:56px;height:56px;border-radius:8px;background:var(--cream2);border:1.5px solid var(--line);margin-top:12px;transition:background .12s;" id="px-swatch"></div>
+      </div>
+      <div class="icard">
+        <h3>Resolution → Memory</h3>
+        <div class="fbox">4×4   →    48 bytes
+8×8   →   192 bytes
+12×12 →   432 bytes
+16×16 →   768 bytes
+─────────────────
+1920×1080 (HD)
+      → 6,220,800 bytes
+      → ~6 MB raw</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PIXEL MATRIX ─── -->
+<section class="sec" id="s-matrix">
+  <div class="eyebrow">Concept 04</div>
+  <h2 class="sec-h">Stored as a 3D Matrix</h2>
+  <p class="sec-lead">All pixel values live in memory as a 3D array shaped <strong>[Height × Width × 3]</strong>. Click the channel buttons to isolate R, G, or B. Hover cells to see coordinates.</p>
+  <div class="two-col">
+    <div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="zbtn on" data-ch="all">All (R,G,B)</button>
+        <button class="zbtn" data-ch="r" style="color:var(--red)">R only</button>
+        <button class="zbtn" data-ch="g" style="color:var(--green)">G only</button>
+        <button class="zbtn" data-ch="b" style="color:var(--blue)">B only</button>
+      </div>
+      <div class="matrix-wrap">
+        <div class="eyebrow" style="margin-bottom:10px">5×5 sample matrix</div>
+        <table class="mtable" id="mtable"></table>
+      </div>
+    </div>
+    <div>
+      <div class="icard" style="margin-bottom:14px">
+        <h3>Python / NumPy syntax</h3>
+        <div class="fbox"># Shape: [Height, Width, 3]
+img = np.array([
+  [[210,80,120],[200,75,115],...],
+  [[195,70,110],[205,78,118],...],
+  ...
+])
+
+img[0][0]    → [210, 80, 120]
+img[0][0][0] → 210  ← Red
+img[0][0][1] → 80   ← Green
+img[0][0][2] → 120  ← Blue
+
+# Grayscale: shape [H, W]
+# RGB:       shape [H, W, 3]</div>
+      </div>
+      <div class="icard">
+        <h3>Why 3 dimensions?</h3>
+        <p>Dim 1 = <strong>row</strong> (Y). Dim 2 = <strong>column</strong> (X). Dim 3 = <strong>channel</strong> (0=R, 1=G, 2=B). The same (row, col) address gives you one full pixel's colour when you read all 3 channels.</p>
+        <span class="tag">EXAM: shape (H,W,3) for colour · (H,W) for grayscale</span>
+      </div>
+    </div>
+  </div>
+  <div class="takeaway" style="margin-top:24px">
+    <h3>Same data = same image, always</h3>
+    <div class="tk-li">The matrix stores every pixel's exact colour with no approximation — pure numbers.</div>
+    <div class="tk-li">If you save and reload the same array, you always reconstruct the identical image.</div>
+    <div class="tk-li">Image files (PNG, BMP) are essentially these matrices, stored with optional compression on top.</div>
+  </div>
+</section>
+
+<!-- ─── COLOUR CHANNELS ─── -->
+<section class="sec" id="s-channels">
+  <div class="eyebrow">Concept 05</div>
+  <h2 class="sec-h">RGB = Three Separate Layers</h2>
+  <p class="sec-lead">An RGB image is actually <strong>three independent grayscale images stacked</strong>. Each layer (channel) holds only the intensity of one colour. Click a channel to see it alone — this is how CNNs and filters work on images.</p>
+  <div class="two-col">
+    <div>
+      <div class="eyebrow" style="margin-bottom:10px">Click a channel to isolate it</div>
+      <div class="channel-stack" id="ch-stack">
+        <div class="ch-layer on" data-ch="rgb"><div class="ch-dot" style="background:linear-gradient(135deg,#d63b2f,#1a7a4a,#2563c4)"></div><div><h4>Full RGB (combined)</h4><p>All three channels merged — the colour image you normally see</p></div></div>
+        <div class="ch-layer" data-ch="r"><div class="ch-dot" style="background:#d63b2f"></div><div><h4 style="color:var(--red)">Red channel only</h4><p>How much red each pixel contributes. Brighter = more red.</p></div></div>
+        <div class="ch-layer" data-ch="g"><div class="ch-dot" style="background:#1a7a4a"></div><div><h4 style="color:var(--green)">Green channel only</h4><p>Human eyes are most sensitive to green — it carries most detail.</p></div></div>
+        <div class="ch-layer" data-ch="b"><div class="ch-dot" style="background:#2563c4"></div><div><h4 style="color:var(--blue)">Blue channel only</h4><p>Least perceptually sensitive — skies, shadows, cool tones.</p></div></div>
+      </div>
+      <div class="icard" style="margin-top:14px;background:var(--cream2)">
+        <div class="fbox gold">RGB → 3 grayscale images stacked
+Shape per channel: [H, W]
+Stack together:    [H, W, 3]
+
+Filter on R only → img[:,:,0]
+Filter on G only → img[:,:,1]
+Filter on B only → img[:,:,2]</div>
+      </div>
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:10px">8×8 channel preview</div>
+      <div id="ch-preview"></div>
+      <div class="icard" style="margin-top:14px" id="ch-desc">
+        <h3>Why this matters</h3>
+        <p>CNNs (Convolutional Neural Networks) apply filters <strong>separately to each channel</strong>. Understanding channels helps you understand why a colour image has 3× more data than grayscale, and why CV models process them independently before combining.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <span class="tag red">Red channel = img[:,:,0]</span>
+          <span class="tag green">Green = img[:,:,1]</span>
+          <span class="tag blue">Blue = img[:,:,2]</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── RECONSTRUCTION ─── -->
+<section class="sec" id="s-recon">
+  <div class="eyebrow">Concept 06</div>
+  <h2 class="sec-h">Watch the Reconstruction</h2>
+  <p class="sec-lead">The computer reads the matrix <strong>row by row</strong>, placing each pixel at its exact (x, y) position. Press Play and watch an image appear from raw numbers in real time.</p>
+  <div class="two-col" style="margin-bottom:20px">
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">Reconstructed image (12×12)</div>
+      <div class="recon-grid" id="recon-grid"></div>
+      <div class="prog-bar"><div class="prog-fill" id="rpfill"></div></div>
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--ink3);margin-top:7px;" id="rpstat">0 / 144 pixels placed</p>
+      <div style="margin-top:14px">
+        <button class="ctrl-btn" id="btn-play">▶ Play</button>
+        <button class="ctrl-btn" id="btn-reset">↺ Reset</button>
+        <button class="ctrl-btn" id="btn-fast">⚡ Fast</button>
+      </div>
+    </div>
+    <div>
+      <div class="icard" style="margin-bottom:14px">
+        <h3>Numbers being read</h3>
+        <div class="fbox coral" style="font-size:.58rem;line-height:1.88">Row 0: 210,80,120 | 200,75,115 | 195,68,108 ...
+Row 1: 185,65,102 | 178,62,98  | 172,58,94  ...
+Row 2: 165,55,90  | 160,52,86  | 154,48,82  ...
+Row 3: 145,46,80  | 140,44,76  | 135,41,72  ...
+Row 4: 125,40,68  | 130,42,70  | 135,44,72  ...</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-c"><div class="sv" id="stat-px">0</div><div class="sl">Pixels placed</div></div>
+        <div class="stat-c"><div class="sv" id="stat-row">0</div><div class="sl">Rows read</div></div>
+        <div class="stat-c"><div class="sv" id="stat-pct">0%</div><div class="sl">Complete</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="takeaway">
+    <h3>The reconstruction rule</h3>
+    <div class="tk-li">Start at row 0, column 0. Read (R,G,B). Paint pixel at (0,0). Move right column by column.</div>
+    <div class="tk-li">When a row ends, drop to the next row. Repeat until all pixels are placed — that's the complete image.</div>
+    <div class="tk-li">Same pixel data → same image, always. Pixels are precise instructions, not random colours.</div>
+  </div>
+</section>
+
+<!-- ─── NOISE ─── -->
+<section class="sec" id="s-noise">
+  <div class="eyebrow">Advanced 01</div>
+  <h2 class="sec-h">Noise &amp; Why Preprocessing Matters</h2>
+  <p class="sec-lead">Real cameras add random errors to pixel values — this is called <strong>noise</strong>. A pixel that should be (200, 150, 100) becomes (213, 138, 117) due to sensor heat or low light. Drag the slider to add noise and see the effect.</p>
+  <div class="noise-compare">
+    <div class="noise-panel">
+      <h4>Clean Image</h4>
+      <div id="clean-grid" class="noise-grid" style="grid-template-columns:repeat(10,20px)"></div>
+      <p style="font-size:.75rem;color:var(--ink3);">Pixel values exactly as stored</p>
+    </div>
+    <div class="noise-panel">
+      <h4>Noisy Image <span id="noise-pct-label" style="color:var(--red);font-family:'IBM Plex Mono',monospace;font-size:.7rem">(±0)</span></h4>
+      <div id="noisy-grid" class="noise-grid" style="grid-template-columns:repeat(10,20px)"></div>
+      <p style="font-size:.75rem;color:var(--ink3);">Random errors added to each channel</p>
+    </div>
+  </div>
+  <div class="noise-slider-row" style="max-width:420px;margin-top:4px">
+    <label>Noise level</label>
+    <input type="range" id="noise-slider" min="0" max="80" value="0">
+    <span id="noise-val">0</span>
+  </div>
+
+  <hr class="rule">
+  <div class="two-col">
+    <div class="icard">
+      <h3>Types of image noise</h3>
+      <div class="fbox">Gaussian noise:
+  Random ± variations to all pixels
+  Cause: low light, sensor heat
+  Looks: overall graininess
+
+Salt &amp; Pepper noise:
+  Random pixels become 0 or 255
+  Cause: faulty sensors, data errors
+  Looks: white/black speckles
+
+Compression artefacts:
+  Blocky patterns in JPEG
+  Cause: aggressive compression</div>
+    </div>
+    <div class="icard">
+      <h3>How preprocessing fixes it</h3>
+      <div class="fbox gold">Problem → Solution
+
+Noisy pixels
+  → Gaussian Blur (averages neighbours)
+  → Median Filter (replaces with median)
+
+Wrong brightness
+  → Normalisation (0–255 → 0.0–1.0)
+
+Wrong size
+  → Resize to model input (e.g. 224×224)
+
+Too dark/bright
+  → Histogram Equalisation</div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="tag red">Noise = random errors</span>
+        <span class="tag green">Blur = noise remover</span>
+      </div>
+    </div>
+  </div>
+  <div class="takeaway" style="margin-top:20px">
+    <h3>Why this connects to the CV Pipeline</h3>
+    <div class="tk-li">Noise is why Step 2 of the CV pipeline (Preprocessing) exists — raw images are never clean enough to feed directly to a model.</div>
+    <div class="tk-li">A model trained on clean images will perform badly on noisy ones unless preprocessing standardises the input first.</div>
+    <div class="tk-li">Exam answer: "Preprocessing removes noise, resizes, and normalises images so the model receives consistent, clean input."</div>
+  </div>
+</section>
+
+<!-- ─── COMPRESSION ─── -->
+<section class="sec" id="s-compress">
+  <div class="eyebrow">Advanced 02</div>
+  <h2 class="sec-h">How Image Compression Works</h2>
+  <p class="sec-lead">Raw images are huge. Compression shrinks file size. Click each quality level to see how the same image looks — and how many bytes it costs. There are two types: <strong>Lossless</strong> (no quality loss) and <strong>Lossy</strong> (smaller but degrades quality).</p>
+
+  <div class="comp-visual" id="comp-cards"></div>
+
+  <div id="comp-detail" class="two-col">
+    <div class="icard">
+      <h3 id="cd-title">Select a quality level above</h3>
+      <p id="cd-desc">Click one of the four cards to see how compression changes the pixel data and file size.</p>
+      <div class="fbox" id="cd-code"> </div>
+    </div>
+    <div class="icard">
+      <h3>Lossless vs Lossy</h3>
+      <div class="fbox gold">LOSSLESS (PNG, BMP, GIF):
+  • Exact pixel values preserved
+  • Larger files
+  • Used: medical, legal, screenshots
+
+LOSSY (JPEG):
+  • Some pixel data discarded
+  • Much smaller files
+  • Human eye can't see lost detail
+  • Used: photos, web images
+
+Rule: quality ↓ → file size ↓
+      → pixelation ↑</div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="tag green">PNG = Lossless</span>
+        <span class="tag red">JPEG = Lossy</span>
+        <span class="tag">BMP = Uncompressed</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway" style="margin-top:20px">
+    <h3>Key Compression Facts</h3>
+    <div class="tk-li">Raw image = every pixel's exact RGB values = large file. Compression reduces this by finding patterns.</div>
+    <div class="tk-li">JPEG reduces file size by averaging out fine colour differences the human eye can't easily perceive.</div>
+    <div class="tk-li">PNG is lossless — it compresses by finding repeating patterns but preserves every original pixel value exactly.</div>
+    <div class="tk-li">For CV/AI: always prefer lossless formats — lossy compression introduces artefacts that can confuse models.</div>
+  </div>
+</section>
+
+<!-- ─── RESOLUTION vs SIZE ─── -->
+<section class="sec" id="s-ressize">
+  <div class="eyebrow">Advanced 03</div>
+  <h2 class="sec-h">Resolution vs Image Size</h2>
+  <p class="sec-lead">Students confuse two different things. <strong>Image dimensions</strong> (width × height in pixels) and <strong>PPI</strong> (pixels per inch — print quality). Click each card to understand the difference interactively.</p>
+
+  <div class="res-size-grid" id="ressize-cards"></div>
+
+  <div class="two-col">
+    <div class="icard">
+      <h3>What changes on screen vs print</h3>
+      <div class="fbox">On a SCREEN:
+  Only pixel count matters.
+  More pixels = more detail shown.
+  PPI setting doesn't affect display.
+
+On PRINT:
+  PPI determines physical size.
+  Same pixel count at:
+    72 PPI  → large, rough print
+    300 PPI → small, sharp print
+
+Formula:
+  Print width = pixel width ÷ PPI</div>
+    </div>
+    <div class="icard">
+      <h3>Common image sizes</h3>
+      <div class="fbox gold">Thumbnail    :  150 ×  150 px
+Social media :  1080 × 1080 px
+Full HD      :  1920 × 1080 px
+4K Ultra HD  :  3840 × 2160 px
+12MP camera  :  4000 × 3000 px
+Medical scan :  512 ×  512 px (standard)
+CNN input    :  224 ×  224 px (ImageNet)</div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="tag">More pixels ≠ better always</span>
+        <span class="tag blue">CNN needs fixed size input</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway" style="margin-top:20px">
+    <h3>Remember the distinction</h3>
+    <div class="tk-li">Dimensions = how many pixels wide and tall the image is. This determines what the computer stores.</div>
+    <div class="tk-li">PPI = how many pixels fit in one inch when printed. This only affects physical print quality, not on-screen quality.</div>
+    <div class="tk-li">For CV/AI models: images are always resized to a fixed dimension (e.g. 224×224) before processing — PPI is irrelevant.</div>
+  </div>
+</section>
+
+<!-- ─── PIXEL FILTERS / KERNELS ─── -->
+<section class="sec" id="s-filter">
+  <div class="eyebrow">Advanced 04</div>
+  <h2 class="sec-h">Pixel Filters &amp; Kernels</h2>
+  <p class="sec-lead">A filter (kernel) is a small 3×3 grid of numbers that slides over the image. At each pixel, it <strong>multiplies its neighbours by the kernel values and sums them</strong> to produce a new pixel. This is how edge detection, blurring, and sharpening work — and the foundation of CNNs.</p>
+
+  <div class="two-col" style="margin-bottom:20px">
+    <div>
+      <div class="eyebrow" style="margin-bottom:10px">Choose a filter type</div>
+      <div class="kernel-btns" id="kernel-btns">
+        <button class="kbtn on" data-k="blur">Blur</button>
+        <button class="kbtn" data-k="sharpen">Sharpen</button>
+        <button class="kbtn" data-k="edge">Edge Detect</button>
+        <button class="kbtn" data-k="emboss">Emboss</button>
+        <button class="kbtn" data-k="identity">Identity (no change)</button>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="eyebrow" style="margin-bottom:8px">3×3 kernel values</div>
+        <div class="kernel-grid" id="kernel-display"></div>
+      </div>
+      <div class="icard" style="background:var(--cream2)">
+        <h3 id="filter-title">Blur</h3>
+        <p id="filter-desc">Averages each pixel with its 8 neighbours. All weights equal → smooth, soft result. Removes noise but loses sharpness.</p>
+        <div class="fbox" id="filter-formula" style="font-size:.62rem">new_pixel = (1/9) × sum of 9 neighbours
+= average of the 3×3 area
+
+Effect: smooths out sharp differences
+Used for: noise removal, preprocessing</div>
+      </div>
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">Hover pixels to see kernel position</div>
+      <div id="filter-demo-grid" class="filter-demo" style="grid-template-columns:repeat(8,28px);margin-bottom:12px"></div>
+      <div class="icard" id="filter-output-card">
+        <h3>How it works step by step</h3>
+        <div class="fbox" id="filter-step" style="font-size:.62rem">1. Place 3×3 kernel over a pixel
+2. Multiply each neighbour by
+   the kernel value above it
+3. Sum all 9 products
+4. Result = new pixel value
+5. Slide kernel one pixel right
+6. Repeat for every pixel
+
+Hover the image grid above →
+to see the kernel sliding.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway">
+    <h3>Why Filters Matter for CV</h3>
+    <div class="tk-li">Edge detection filters find boundaries between objects — this is the first step in "feature extraction" in the CV pipeline.</div>
+    <div class="tk-li">Blur filters are used in preprocessing to remove noise before the image goes to a model.</div>
+    <div class="tk-li">CNNs (Convolutional Neural Networks) learn their own filters automatically from training data — they are not hand-coded like these.</div>
+    <div class="tk-li">Exam key: "Convolution = sliding a kernel over every pixel and computing a weighted sum of its neighbourhood."</div>
+  </div>
+</section>
+
+<!-- ─── DRAW YOUR OWN ─── -->
+<section class="sec" id="s-draw">
+  <div class="eyebrow">Hands-On Activity</div>
+  <h2 class="sec-h">Draw Your Own 8×8 Image</h2>
+  <p class="sec-lead">Pick a colour and <strong>click or drag</strong> to paint. The matrix updates live — showing the exact RGB values a computer would store for what you create.</p>
+  <div class="two-col">
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">Colour palette</div>
+      <div class="palette" id="palette"></div>
+      <div class="eyebrow" style="margin-bottom:8px">Canvas (8×8 pixels)</div>
+      <div class="draw-grid" id="draw-grid" style="grid-template-columns:repeat(8,30px)"></div>
+      <div style="margin-top:12px;display:flex;gap:7px">
+        <button class="ctrl-btn" onclick="clearDraw()" style="font-size:.73rem;padding:7px 13px">Clear ✕</button>
+        <button class="ctrl-btn" onclick="randomDraw()" style="font-size:.73rem;padding:7px 13px">Random 🎲</button>
+      </div>
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:8px">Live matrix output</div>
+      <div class="draw-output" id="draw-out"></div>
+      <div class="icard" style="margin-top:14px">
+        <h3>What you're creating</h3>
+        <p>Your drawing is a 3D array of shape <strong style="color:var(--red)">[8, 8, 3]</strong>. Every pixel you paint stores 3 numbers. This is exactly how PNG and JPEG images work before compression.</p>
+        <span class="tag">Array: 8 × 8 × 3 = 192 values total</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── QUIZ ─── -->
+<section class="sec" id="s-quiz">
+  <div class="eyebrow">Test Yourself</div>
+  <h2 class="sec-h">Quick Quiz</h2>
+  <p class="sec-lead">10 exam-pattern questions covering all topics in this lab. Instant feedback and explanation on every answer.</p>
+  <div style="max-width:640px">
+    <div class="qprog"><div class="qbar" id="qbar" style="width:0%"></div></div>
+    <div id="qbox"></div>
+    <div class="qsc" id="qsc">
+      <div class="big" id="qbig"></div>
+      <div class="msg" id="qmsg"></div>
+      <button class="qrs" id="qrs">Retake Quiz ↺</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ══════════════════════════════════════════════ SCRIPT ══ -->
+<script>
+// ── Navigation ──
+function go(id){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.sb-link').forEach(a=>a.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  const lnk=document.querySelector('.sb-link[data-s="'+id+'"]');
+  if(lnk)lnk.classList.add('on');
+  document.getElementById('main').scrollTo(0,0);
+}
+document.querySelectorAll('.sb-link').forEach(a=>{
+  a.addEventListener('click',function(e){e.preventDefault();go(this.dataset.s);});
+});
+
+// ── Tooltip ──
+const tip=document.getElementById('tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity='1';moveTip(e);}
+function moveTip(e){tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-8)+'px';}
+function hideTip(){tip.style.opacity='0';}
+document.addEventListener('mousemove',e=>{if(tip.style.opacity==='1')moveTip(e);});
+
+// ════ S-PIXEL: RGB Mixer ════
+const sr=document.getElementById('sr'),sg=document.getElementById('sg'),sb2=document.getElementById('sb2');
+const vr=document.getElementById('vr'),vg=document.getElementById('vg'),vb=document.getElementById('vb');
+function updateRGB(){
+  const r=sr.value,g=sg.value,b=sb2.value,col=`rgb(${r},${g},${b})`;
+  const lum=0.299*r+0.587*g+0.114*b;
+  const tc=lum>160?'rgba(0,0,0,.65)':'rgba(255,255,255,.85)';
+  document.getElementById('cprev').style.background=col;
+  document.getElementById('cprev').textContent=`(${r}, ${g}, ${b})`;
+  document.getElementById('cprev').style.color=tc;
+  const bp=document.getElementById('bigpx');
+  bp.style.background=col;bp.style.color=tc;
+  document.getElementById('bigpx-lbl').innerHTML=`(${r},${g},${b})<br>R=${r}<br>G=${g}<br>B=${b}`;
+  vr.textContent=r;vg.textContent=g;vb.textContent=b;
+}
+[sr,sg,sb2].forEach(s=>s.addEventListener('input',updateRGB));
+
+// ════ S-TYPES: Image Types ════
+const BIN_DATA=[[0,0,1,1,1,1,0,0],[0,1,1,0,0,1,1,0],[1,1,0,0,0,0,1,1],[1,1,1,1,1,1,1,1],[1,1,0,0,0,0,1,1],[0,1,1,0,0,1,1,0],[0,0,1,1,1,1,0,0],[0,0,0,0,0,0,0,0]];
+const binGrid=document.getElementById('bin-grid');
+BIN_DATA.forEach(row=>row.forEach(v=>{
+  const d=document.createElement('div');d.className='px';
+  const s=v?255:0;d.style.background=`rgb(${s},${s},${s})`;d.textContent=v;d.style.color=v?'#888':'#ccc';
+  d.addEventListener('click',()=>{const cur=parseInt(d.textContent),nxt=cur?0:1,ns=nxt?255:0;d.textContent=nxt;d.style.background=`rgb(${ns},${ns},${ns})`;d.style.color=nxt?'#888':'#ccc';});
+  d.addEventListener('mouseenter',e=>showTip(e,`Value: ${d.textContent}`));d.addEventListener('mouseleave',hideTip);
+  binGrid.appendChild(d);
+}));
+const GRAY_DATA=[[20,50,100,160,200,170,110,45],[45,90,165,220,240,215,140,70],[75,145,210,250,255,245,175,95],[80,155,220,255,255,250,180,100],[70,140,205,245,252,240,165,88],[40,85,155,210,225,205,130,60],[20,48,95,150,170,145,90,38],[10,25,55,90,105,85,50,18]];
+const grayGrid=document.getElementById('gray-grid');
+GRAY_DATA.forEach(row=>row.forEach(v=>{
+  const d=document.createElement('div');d.className='px';
+  d.style.background=`rgb(${v},${v},${v})`;d.textContent=v;d.style.color=v>128?'#333':'#aaa';
+  d.addEventListener('mouseenter',e=>showTip(e,`Brightness: ${v}`));d.addEventListener('mouseleave',hideTip);
+  grayGrid.appendChild(d);
+}));
+function genRGBTypeData(){
+  const d=[];for(let y=0;y<8;y++){for(let x=0;x<8;x++){
+    const hue=(x/8)*360,r=Math.round(128+127*Math.cos(hue*Math.PI/180));
+    const g=Math.round(128+127*Math.cos((hue+120)*Math.PI/180));
+    const b=Math.round(128+127*Math.cos((hue+240)*Math.PI/180));
+    d.push([Math.max(0,Math.min(255,r)),Math.max(0,Math.min(255,g)),Math.max(0,Math.min(255,b))]);
+  }}return d;
+}
+const rgbTypeData=genRGBTypeData();
+const rgbGrid=document.getElementById('rgb-grid');
+rgbTypeData.forEach(([r,g,b])=>{
+  const d=document.createElement('div');d.className='px';
+  d.style.background=`rgb(${r},${g},${b})`;
+  d.addEventListener('mouseenter',e=>showTip(e,`(${r},${g},${b})`));d.addEventListener('mouseleave',hideTip);
+  rgbGrid.appendChild(d);
+});
+document.querySelectorAll('.tbtn').forEach(b=>{
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.tpane').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');
+    document.getElementById(this.dataset.t).classList.add('on');
+  });
+});
+
+// ════ S-GRID: Pixel Grid ════
+function genFace(sz){
+  const d=[];const cx=sz/2,cy=sz/2.1,fr=sz*0.4;
+  for(let y=0;y<sz;y++){const row=[];for(let x=0;x<sz;x++){
+    const dx=x-cx,dy=y-cy,dist=Math.sqrt(dx*dx+dy*dy);
+    let r,g,b;
+    if(dist<fr){
+      const n=(Math.sin(x*.9+y*.5)*.5+.5)*18;
+      r=Math.min(255,190+n);g=Math.min(255,140+n*.55);b=Math.min(255,92+n*.4);
+      const eL=Math.sqrt((x-(cx-sz*.12))**2+(y-(cy-sz*.08))**2);
+      const eR=Math.sqrt((x-(cx+sz*.12))**2+(y-(cy-sz*.08))**2);
+      if(eL<sz*.08||eR<sz*.08){r=38;g=32;b=48;}
+      if(Math.abs(x-cx)<sz*.13&&y>cy+sz*.09&&y<cy+sz*.17){r=175;g=75;b=88;}
+    } else {r=20+Math.random()*12;g=14+Math.random()*8;b=25+Math.random()*12;}
+    row.push([Math.round(r),Math.round(g),Math.round(b)]);
+  }d.push(row);}return d;
+}
+let faceCache={};
+function buildGrid(res){
+  if(!faceCache[res])faceCache[res]=genFace(res);
+  const data=faceCache[res];
+  const gc=document.getElementById('grid-container');gc.innerHTML='';
+  const ps=Math.min(Math.floor(260/res),48);
+  const g=document.createElement('div');
+  g.style.cssText=`display:grid;grid-template-columns:repeat(${res},${ps}px);gap:2px;`;
+  data.forEach((row,yi)=>row.forEach(([r,gv,b],xi)=>{
+    const px=document.createElement('div');
+    px.style.cssText=`width:${ps}px;height:${ps}px;border-radius:2px;background:rgb(${r},${gv},${b});cursor:crosshair;border:1px solid rgba(0,0,0,0.05);`;
+    px.addEventListener('mouseenter',e=>{
+      const hex=`#${r.toString(16).padStart(2,'0')}${gv.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+      document.getElementById('px-detail').textContent=`Position: [${yi}, ${xi}]\nR: ${r}   G: ${gv}   B: ${b}\nHex: ${hex}`;
+      document.getElementById('px-swatch').style.background=`rgb(${r},${gv},${b})`;
+      showTip(e,`[${yi},${xi}]  rgb(${r},${gv},${b})`);
+    });
+    px.addEventListener('mouseleave',hideTip);
+    g.appendChild(px);
+  }));
+  gc.appendChild(g);
+}
+document.querySelectorAll('.zbtn[data-res]').forEach(b=>{
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.zbtn[data-res]').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');buildGrid(parseInt(this.dataset.res));
+  });
+});
+buildGrid(4);
+
+// ════ S-MATRIX ════
+const MAT=[
+  [[210,80,120],[200,75,115],[195,68,108],[180,62,100],[170,55,92]],
+  [[205,78,118],[195,72,112],[190,65,105],[175,60,97],[165,53,90]],
+  [[185,65,102],[178,62,98],[172,58,94],[160,52,85],[150,46,78]],
+  [[165,55,90],[160,52,86],[154,48,82],[142,44,75],[130,38,68]],
+  [[145,46,80],[140,44,76],[135,41,72],[125,36,65],[115,32,60]],
+];
+let curCh='all';
+function buildMatrix(){
+  const t=document.getElementById('mtable');t.innerHTML='';
+  MAT.forEach((row,yi)=>{
+    const tr=document.createElement('tr');
+    row.forEach(([r,g,b],xi)=>{
+      const td=document.createElement('td');
+      const lum=0.299*r+0.587*g+0.114*b;
+      const ltc=lum>100?'rgba(0,0,0,.6)':'rgba(255,255,255,.75)';
+      if(curCh==='all'){
+        td.style.background=`rgb(${r},${g},${b})`;td.style.color=ltc;
+        td.innerHTML=`<span class="cell-r">${r}</span>,<span class="cell-g">${g}</span>,<span class="cell-b">${b}</span>`;
+      } else if(curCh==='r'){
+        td.style.background=`rgb(${r},0,0)`;td.style.color='rgba(255,200,200,.8)';td.textContent=r;
+      } else if(curCh==='g'){
+        td.style.background=`rgb(0,${g},0)`;td.style.color='rgba(200,255,220,.8)';td.textContent=g;
+      } else {
+        td.style.background=`rgb(0,0,${b})`;td.style.color='rgba(200,220,255,.8)';td.textContent=b;
+      }
+      td.addEventListener('mouseenter',e=>showTip(e,`[${yi}][${xi}] → rgb(${r},${g},${b})`));
+      td.addEventListener('mouseleave',hideTip);
+      tr.appendChild(td);
+    });t.appendChild(tr);
+  });
+}
+document.querySelectorAll('.zbtn[data-ch]').forEach(b=>{
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.zbtn[data-ch]').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');curCh=this.dataset.ch;buildMatrix();
+  });
+});
+buildMatrix();
+
+// ════ S-CHANNELS ════
+const CH_DATA=[];
+for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+  const cx=3.5,cy=3.5,dist=Math.sqrt((x-cx)**2+(y-cy)**2);
+  const r=Math.round(Math.min(255,120+dist*25));
+  const g=Math.round(Math.min(255,80+x*22));
+  const b=Math.round(Math.min(255,180-y*18));
+  CH_DATA.push([r,g,b]);
+}
+function buildChannelPreview(mode){
+  const cp=document.getElementById('ch-preview');cp.innerHTML='';
+  const grid=document.createElement('div');
+  grid.className='ch-preview';
+  grid.style.cssText='display:grid;grid-template-columns:repeat(8,22px);gap:2px;border-radius:6px;overflow:hidden;border:1.5px solid var(--line);width:fit-content;';
+  CH_DATA.forEach(([r,g,b])=>{
+    const d=document.createElement('div');d.className='ch-px';d.style.height='22px';
+    if(mode==='rgb')d.style.background=`rgb(${r},${g},${b})`;
+    else if(mode==='r')d.style.background=`rgb(${r},0,0)`;
+    else if(mode==='g')d.style.background=`rgb(0,${g},0)`;
+    else d.style.background=`rgb(0,0,${b})`;
+    grid.appendChild(d);
+  });
+  cp.appendChild(grid);
+  const labels={rgb:'Full colour — all channels combined',r:'Red channel — only R values (G=0, B=0)',g:'Green channel — only G values (R=0, B=0)',b:'Blue channel — only B values (R=0, G=0)'};
+  const lp=document.createElement('p');
+  lp.style.cssText='font-family:"IBM Plex Mono",monospace;font-size:.6rem;color:var(--ink3);margin-top:8px;';
+  lp.textContent=labels[mode];cp.appendChild(lp);
+}
+buildChannelPreview('rgb');
+document.querySelectorAll('#ch-stack .ch-layer').forEach(el=>{
+  el.addEventListener('click',function(){
+    document.querySelectorAll('#ch-stack .ch-layer').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');buildChannelPreview(this.dataset.ch);
+  });
+});
+
+// ════ S-RECON ════
+const ROWS=12,COLS=12;
+const reconData=[];
+for(let y=0;y<ROWS;y++){for(let x=0;x<COLS;x++){
+  const cx=COLS/2,cy=ROWS/2.1,dist=Math.sqrt((x-cx)**2+(y-cy)**2);
+  let r,g,b;
+  if(dist<ROWS*.4){
+    const n=Math.sin(x*.9+y*.5)*9;
+    r=Math.min(255,190+n);g=Math.min(255,140+n*.55);b=Math.min(255,92+n*.4);
+    const eL=Math.sqrt((x-(cx-COLS*.12))**2+(y-(cy-ROWS*.08))**2);
+    const eR=Math.sqrt((x-(cx+COLS*.12))**2+(y-(cy-ROWS*.08))**2);
+    if(eL<COLS*.1||eR<COLS*.1){r=38;g=32;b=48;}
+    if(Math.abs(x-cx)<COLS*.15&&y>cy+ROWS*.08&&y<cy+ROWS*.18){r=175;g=75;b=88;}
+  } else {r=20;g=14;b=25;}
+  reconData.push([Math.round(r),Math.round(g),Math.round(b)]);
+}}
+const rg=document.getElementById('recon-grid');
+rg.style.gridTemplateColumns=`repeat(${COLS},1fr)`;
+const rcells=[];
+reconData.forEach(([r,g,b])=>{const d=document.createElement('div');d.className='rpx';rg.appendChild(d);rcells.push({el:d,r,g,b});});
+let animId=null,animIdx=0,animSpeed=70;
+function updStats(i){
+  const tot=reconData.length;
+  document.getElementById('stat-px').textContent=i;
+  document.getElementById('stat-row').textContent=Math.floor(i/COLS);
+  document.getElementById('stat-pct').textContent=Math.round(i/tot*100)+'%';
+  document.getElementById('rpfill').style.width=(i/tot*100)+'%';
+  document.getElementById('rpstat').textContent=`${i} / ${tot} pixels placed`;
+}
+function playRecon(){
+  document.getElementById('btn-play').disabled=true;
+  function step(){
+    if(animIdx>=rcells.length){document.getElementById('btn-play').disabled=false;return;}
+    const{el,r,g,b}=rcells[animIdx];el.style.background=`rgb(${r},${g},${b})`;
+    animIdx++;updStats(animIdx);animId=setTimeout(step,animSpeed);
+  }step();
+}
+function resetRecon(){
+  clearTimeout(animId);animIdx=0;
+  rcells.forEach(c=>c.el.style.background='var(--cream2)');
+  updStats(0);document.getElementById('btn-play').disabled=false;
+}
+document.getElementById('btn-play').addEventListener('click',()=>{if(animIdx<rcells.length)playRecon();});
+document.getElementById('btn-reset').addEventListener('click',resetRecon);
+document.getElementById('btn-fast').addEventListener('click',function(){
+  animSpeed=animSpeed===70?7:70;this.textContent=animSpeed===7?'🐢 Slow':'⚡ Fast';
+});
+
+// ════ S-NOISE ════
+const NOISE_BASE=[];
+for(let y=0;y<10;y++)for(let x=0;x<10;x++){
+  const cx=4.5,cy=4.5,dist=Math.sqrt((x-cx)**2+(y-cy)**2);
+  const v=Math.round(Math.min(255,50+dist*35));
+  NOISE_BASE.push([Math.min(255,v+80),Math.min(255,v+40),Math.min(255,v)]);
+}
+function buildNoiseGrids(level){
+  ['clean-grid','noisy-grid'].forEach((id,isNoisy)=>{
+    const g=document.getElementById(id);g.innerHTML='';
+    NOISE_BASE.forEach(([r,gv,b])=>{
+      const d=document.createElement('div');d.className='npx';
+      if(!isNoisy){d.style.background=`rgb(${r},${gv},${b})`;}
+      else{
+        const nr=Math.max(0,Math.min(255,r+(Math.random()*2-1)*level));
+        const ng=Math.max(0,Math.min(255,gv+(Math.random()*2-1)*level));
+        const nb=Math.max(0,Math.min(255,b+(Math.random()*2-1)*level));
+        d.style.background=`rgb(${Math.round(nr)},${Math.round(ng)},${Math.round(nb)})`;
+      }
+      g.appendChild(d);
+    });
+  });
+}
+buildNoiseGrids(0);
+document.getElementById('noise-slider').addEventListener('input',function(){
+  const v=parseInt(this.value);
+  document.getElementById('noise-val').textContent=v;
+  document.getElementById('noise-pct-label').textContent=`(±${v})`;
+  buildNoiseGrids(v);
+});
+
+// ════ S-COMPRESS ════
+const COMP_LEVELS=[
+  {q:'Raw',qlabel:'No compression',bytes:'3,072 bytes',sub:'100% quality',detail:'Every pixel stored exactly — 32×32×3 bytes. This is the uncompressed original. File is largest but pixels are perfect.',code:'Format: BMP / Raw PNG\nPixels: exact (R,G,B) per cell\nFile size: 3,072 bytes\nQuality loss: 0%\nUse case: archival, medical'},
+  {q:'High',qlabel:'Low compression',bytes:'~420 bytes',sub:'90% quality',detail:'JPEG at high quality. Tiny differences between nearby pixels are rounded slightly. Human eye cannot detect any change.',code:'Format: JPEG quality=90\nPixels: ~exact (±1–3 values)\nFile size: ~420 bytes\nQuality loss: imperceptible\nUse case: photos, web images'},
+  {q:'Med',qlabel:'Medium compression',bytes:'~180 bytes',sub:'60% quality',detail:'JPEG at medium quality. Blocks of pixels start being averaged together. Slight blurring visible at sharp edges.',code:'Format: JPEG quality=60\nPixels: averaged in 8×8 blocks\nFile size: ~180 bytes\nQuality loss: slight blur\nUse case: thumbnails, previews'},
+  {q:'Low',qlabel:'Heavy compression',bytes:'~60 bytes',sub:'20% quality',detail:'Heavy JPEG compression. Large pixel blocks averaged — "blockiness" is very visible. Fine detail lost permanently.',code:'Format: JPEG quality=20\nPixels: large blocks averaged\nFile size: ~60 bytes\nQuality loss: severe blockiness\nUse case: emergency bandwidth'},
+];
+const SZ=8; // grid size for demo
+function genCompImage(blockSize){
+  const base=[];
+  for(let y=0;y<SZ;y++)for(let x=0;x<SZ;x++){
+    const r=Math.round(180+Math.sin(x*.8+y*.5)*60);
+    const g=Math.round(100+Math.cos(x*.6)*40+y*8);
+    const b=Math.round(60+x*12);
+    base.push([Math.min(255,r),Math.min(255,g),Math.min(255,b)]);
+  }
+  if(blockSize<=1)return base;
+  const out=[];
+  for(let y=0;y<SZ;y++)for(let x=0;x<SZ;x++){
+    const by=Math.floor(y/blockSize)*blockSize;
+    const bx=Math.floor(x/blockSize)*blockSize;
+    let sr=0,sg=0,sb=0,cnt=0;
+    for(let dy=0;dy<blockSize&&by+dy<SZ;dy++)for(let dx=0;dx<blockSize&&bx+dx<SZ;dx++){
+      const idx=(by+dy)*SZ+(bx+dx);
+      sr+=base[idx][0];sg+=base[idx][1];sb+=base[idx][2];cnt++;
+    }
+    out.push([Math.round(sr/cnt),Math.round(sg/cnt),Math.round(sb/cnt)]);
+  }
+  return out;
+}
+const compCards=document.getElementById('comp-cards');
+const blockSizes=[1,1,2,4];
+COMP_LEVELS.forEach((lv,i)=>{
+  const card=document.createElement('div');card.className='comp-card'+(i===0?' on':'');
+  const img=genCompImage(blockSizes[i]);
+  const gridDiv=document.createElement('div');
+  gridDiv.className='comp-grid';gridDiv.style.gridTemplateColumns=`repeat(${SZ},14px)`;
+  img.forEach(([r,g,b])=>{const p=document.createElement('div');p.className='comp-px';p.style.background=`rgb(${r},${g},${b})`;gridDiv.appendChild(p);});
+  card.appendChild(gridDiv);
+  card.innerHTML+=`<div class="qlabel">${lv.qlabel}</div><div class="qval">${lv.q}</div><div class="qsub">${lv.bytes}</div>`;
+  card.addEventListener('click',()=>{
+    document.querySelectorAll('.comp-card').forEach(x=>x.classList.remove('on'));
+    card.classList.add('on');
+    document.getElementById('cd-title').textContent=`${lv.q} Quality — ${lv.qlabel}`;
+    document.getElementById('cd-desc').textContent=lv.detail;
+    document.getElementById('cd-code').textContent=lv.code;
+  });
+  compCards.appendChild(card);
+});
+// init first card detail
+document.getElementById('cd-title').textContent=`${COMP_LEVELS[0].q} Quality — ${COMP_LEVELS[0].qlabel}`;
+document.getElementById('cd-desc').textContent=COMP_LEVELS[0].detail;
+document.getElementById('cd-code').textContent=COMP_LEVELS[0].code;
+
+// ════ S-RESSIZE ════
+const RS_LEVELS=[
+  {label:'Low Res',dim:'32×32 px',size:32,pxcount:'1,024',mem:'3 KB',desc:'Thumbnail quality. Individual pixels clearly visible. Used for icons or avatars.'},
+  {label:'Medium Res',dim:'128×128 px',size:64,pxcount:'16,384',mem:'48 KB',desc:'Decent quality. Standard for many CV model inputs. Recognisable but not detailed.'},
+  {label:'High Res',dim:'512×512 px',size:128,pxcount:'262,144',mem:'768 KB',desc:'Clear, sharp image. Used in medical imaging and high-quality CV tasks.'},
+];
+const rscCards=document.getElementById('ressize-cards');
+RS_LEVELS.forEach((lv,i)=>{
+  const card=document.createElement('div');card.className='rs-card'+(i===0?' on':'');
+  const gridEl=document.createElement('div');
+  gridEl.className='rs-canvas';
+  const cellCount=Math.min(lv.size,16); // show up to 16×16 grid for visual
+  gridEl.style.gridTemplateColumns=`repeat(${cellCount},1fr)`;
+  for(let y=0;y<cellCount;y++)for(let x=0;x<cellCount;x++){
+    const p=document.createElement('div');p.className='rs-px';
+    const r=Math.round(180+Math.sin(x*.5+y*.3)*50);
+    const g=Math.round(100+Math.cos(x*.4)*35+y*3);
+    const b=Math.round(80+x*5);
+    p.style.background=`rgb(${Math.min(255,r)},${Math.min(255,g)},${Math.min(255,b)})`;
+    const sz=Math.max(3,Math.floor(96/cellCount));
+    p.style.width=sz+'px';p.style.height=sz+'px';
+    gridEl.appendChild(p);
+  }
+  card.appendChild(gridEl);
+  card.innerHTML+=`<div class="rs-val">${lv.dim}</div><div class="rs-label">${lv.pxcount} pixels · ${lv.mem} raw</div>`;
+  card.addEventListener('click',()=>{
+    document.querySelectorAll('.rs-card').forEach(x=>x.classList.remove('on'));
+    card.classList.add('on');
+  });
+  rscCards.appendChild(card);
+});
+
+// ════ S-FILTER ════
+const KERNELS={
+  blur:{vals:[1,1,1,1,1,1,1,1,1],div:9,title:'Blur (Box Filter)',desc:'Averages each pixel with its 8 neighbours. All weights equal → smooth, soft result. Removes noise but reduces sharpness.',formula:'new_pixel = (1/9) × sum of 9 neighbours\n= average of the 3×3 area\n\nEffect: smooths differences\nUsed for: noise removal, preprocessing'},
+  sharpen:{vals:[0,-1,0,-1,5,-1,0,-1,0],div:1,title:'Sharpen',desc:'Makes edges more pronounced. The centre pixel is amplified (×5) while neighbours are subtracted — increases contrast at boundaries.',formula:'Center weight: 5 (boost)\nNeighbour weight: -1 (subtract)\n\nnet = 5×center - sum(neighbours)\nEffect: enhances edges\nUsed for: detail enhancement'},
+  edge:{vals:[-1,-1,-1,-1,8,-1,-1,-1,-1],div:1,title:'Edge Detection (Laplacian)',desc:'Finds boundaries by subtracting all neighbours from 8× the centre. Areas of uniform colour become black; edges become bright.',formula:'Center weight: 8\nAll neighbours: -1\n\nIf neighbours ≈ center → output ≈ 0\nIf edge present → output is high\nUsed for: object boundary finding'},
+  emboss:{vals:[-2,-1,0,-1,1,1,0,1,2],div:1,title:'Emboss',desc:'Creates a 3D relief effect by calculating directional differences. Results look like the image is stamped in metal.',formula:'Directional weights (-2 to +2)\nCreates light/shadow effect\n\nResults often shifted +128\nto centre around mid-grey\nUsed for: artistic effects, texture'},
+  identity:{vals:[0,0,0,0,1,0,0,0,0],div:1,title:'Identity (No change)',desc:'Only the centre weight is 1; all others are 0. The output equals the input exactly — no change. Demonstrates that a filter can be neutral.',formula:'Output = 1 × center + 0×rest\n= original pixel\n\nNo change to image.\nUseful for understanding\nhow kernels work.'},
+};
+let curKernel='blur';
+const FD_SIZE=8;
+const fdData=[];
+for(let y=0;y<FD_SIZE;y++)for(let x=0;x<FD_SIZE;x++){
+  const r=Math.round(100+Math.sin(x*.8+y*.6)*80);
+  const g=Math.round(80+Math.cos(x*.5)*60+y*10);
+  const b=Math.round(60+x*15);
+  fdData.push([Math.min(255,r),Math.min(255,g),Math.min(255,b)]);
+}
+function buildFilterGrid(){
+  const g=document.getElementById('filter-demo-grid');g.innerHTML='';
+  fdData.forEach(([r,gv,b],idx)=>{
+    const d=document.createElement('div');d.className='fd-px';
+    d.style.background=`rgb(${r},${gv},${b})`;
+    const y=Math.floor(idx/FD_SIZE),x=idx%FD_SIZE;
+    d.addEventListener('mouseenter',()=>{
+      document.querySelectorAll('.fd-px').forEach((p,pi)=>{
+        const py=Math.floor(pi/FD_SIZE),px2=pi%FD_SIZE;
+        p.classList.remove('highlight','kernel-over');
+        if(pi===idx)p.classList.add('highlight');
+        else if(Math.abs(py-y)<=1&&Math.abs(px2-x)<=1)p.classList.add('kernel-over');
+      });
+      const k=KERNELS[curKernel];
+      document.getElementById('filter-step').textContent=`Kernel centred at [${y},${x}]:
+
+Neighbours × kernel weights:
+  top-left  ×${k.vals[0]}  top-mid ×${k.vals[1]}  top-right ×${k.vals[2]}
+  mid-left  ×${k.vals[3]}  CENTER  ×${k.vals[4]}  mid-right ×${k.vals[5]}
+  bot-left  ×${k.vals[6]}  bot-mid ×${k.vals[7]}  bot-right ×${k.vals[8]}
+
+Sum all products → divide by ${k.div}
+= new pixel value at [${y},${x}]`;
+    });
+    d.addEventListener('mouseleave',()=>{
+      document.querySelectorAll('.fd-px').forEach(p=>p.classList.remove('highlight','kernel-over'));
+      document.getElementById('filter-step').textContent='1. Place 3×3 kernel over a pixel\n2. Multiply each neighbour by\n   the kernel value above it\n3. Sum all 9 products\n4. Result = new pixel value\n5. Slide kernel one pixel right\n6. Repeat for every pixel\n\nHover the image grid above →\nto see the kernel sliding.';
+    });
+    g.appendChild(d);
+  });
+}
+function setKernel(name){
+  curKernel=name;
+  const k=KERNELS[name];
+  document.getElementById('filter-title').textContent=k.title;
+  document.getElementById('filter-desc').textContent=k.desc;
+  document.getElementById('filter-formula').textContent=k.formula;
+  const kd=document.getElementById('kernel-display');kd.innerHTML='';
+  k.vals.forEach(v=>{
+    const c=document.createElement('div');
+    c.className='k-cell'+(v>0?' pos':v<0?' neg':' zero');
+    c.textContent=v===0?'0':(v>0?'+'+v:v);
+    kd.appendChild(c);
+  });
+}
+document.querySelectorAll('.kbtn').forEach(b=>{
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.kbtn').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');setKernel(this.dataset.k);
+  });
+});
+setKernel('blur');buildFilterGrid();
+
+// ════ S-DRAW ════
+const PALCOLORS=[[214,48,49],[225,112,85],[243,156,18],[39,174,96],[41,128,185],[142,68,173],[253,203,110],[255,255,255],[99,110,114],[45,52,54],[0,184,148],[232,67,147]];
+let selCol=PALCOLORS[0];let isDown=false;
+const palEl=document.getElementById('palette');
+PALCOLORS.forEach((c,i)=>{
+  const d=document.createElement('div');d.className='pal-c'+(i===0?' on':'');
+  d.style.background=`rgb(${c[0]},${c[1]},${c[2]})`;
+  d.style.border=`2px solid ${i===0?'var(--ink)':'transparent'}`;
+  d.addEventListener('click',()=>{
+    document.querySelectorAll('.pal-c').forEach(x=>{x.classList.remove('on');x.style.border='2px solid transparent';});
+    d.classList.add('on');d.style.border='2px solid var(--ink)';selCol=c;
+  });
+  palEl.appendChild(d);
+});
+const dg=document.getElementById('draw-grid');
+const dpxEls=[];
+let drawData=Array(8).fill(null).map(()=>Array(8).fill([232,229,220]));
+for(let y=0;y<8;y++){for(let x=0;x<8;x++){
+  const d=document.createElement('div');d.className='dpx';
+  d.addEventListener('mousedown',()=>{isDown=true;paintDraw(y,x,d);});
+  d.addEventListener('mouseenter',()=>{if(isDown)paintDraw(y,x,d);});
+  dg.appendChild(d);dpxEls.push(d);
+}}
+document.addEventListener('mouseup',()=>isDown=false);
+function paintDraw(y,x,el){
+  const c=selCol;drawData[y][x]=c;el.style.background=`rgb(${c[0]},${c[1]},${c[2]})`;updateDrawOut();
+}
+function updateDrawOut(){
+  const lines=drawData.map((row,y)=>`[${y}]: `+row.map(([r,g,b])=>`(${String(r).padStart(3)},${String(g).padStart(3)},${String(b).padStart(3)})`).join(' '));
+  document.getElementById('draw-out').textContent=lines.join('\n');
+}
+function clearDraw(){
+  drawData=Array(8).fill(null).map(()=>Array(8).fill([232,229,220]));
+  dpxEls.forEach(d=>d.style.background='var(--cream2)');updateDrawOut();
+}
+function randomDraw(){
+  for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+    const c=PALCOLORS[Math.floor(Math.random()*PALCOLORS.length)];
+    drawData[y][x]=c;dpxEls[y*8+x].style.background=`rgb(${c[0]},${c[1]},${c[2]})`;
+  }updateDrawOut();
+}
+updateDrawOut();
+
+// ════ QUIZ ════
+const QS=[
+  {q:'A pixel stores which set of values?',opts:['Width, Height, Depth','Red, Green, Blue','Hue, Saturation, Brightness','X, Y, Z coordinates'],ans:1,exp:'✓ A pixel stores exactly 3 values: Red (R), Green (G), and Blue (B), each from 0 to 255.'},
+  {q:'What colour does the pixel value (255, 255, 0) produce?',opts:['White','Cyan','Yellow','Orange'],ans:2,exp:'✓ R=255, G=255, B=0 → maximum Red + maximum Green + no Blue = Yellow.'},
+  {q:'A 100×100 RGB image requires how many bytes before compression?',opts:['10,000','20,000','30,000','100,000'],ans:2,exp:'✓ 100 × 100 pixels × 3 channels (R,G,B) = 30,000 bytes.'},
+  {q:'In what order does a computer place pixels during reconstruction?',opts:['Randomly, brightest first','Column by column','Row by row, top to bottom, left to right','Centre outward'],ans:2,exp:'✓ The matrix is read row by row, left to right. Each pixel is placed at its (row, col) position — always the same result.'},
+  {q:'A grayscale image array has what shape?',opts:['[H, W, 3]','[H, W, 1] or [H, W]','[H, W, 4]','[3, H, W]'],ans:1,exp:'✓ Grayscale has 1 brightness value per pixel — shape [H, W]. Only RGB needs the extra channel dimension of size 3.'},
+  {q:'An RGB image is described as "three separate layers stacked". What are those layers?',opts:['Top, Middle, Bottom pixel rows','Red, Green, Blue channel images (each grayscale)','RGB values repeated 3 times','Three copies of the full colour image'],ans:1,exp:'✓ Each channel (R, G, B) is a grayscale image — just the intensity of that colour. Stacked together they form the full colour image.'},
+  {q:'What does a blur filter do to pixel values?',opts:['Multiplies each pixel by 255','Replaces each pixel with the average of its neighbours','Inverts every pixel value','Removes all pixels below 128'],ans:1,exp:'✓ A blur kernel averages the pixel with its surrounding neighbours — smoothing out abrupt differences and removing noise.'},
+  {q:'Which image format is LOSSLESS?',opts:['JPEG at 90% quality','JPEG at 50% quality','PNG','JPEG at 10% quality'],ans:2,exp:'✓ PNG is lossless — it preserves every pixel exactly. JPEG at any quality is lossy and permanently discards some pixel data.'},
+  {q:'Why does adding noise to an image matter in computer vision?',opts:['It makes images more colourful','Random pixel errors cause models to misclassify objects','Noise increases image resolution','It reduces file size automatically'],ans:1,exp:'✓ Noise introduces random errors in pixel values. A model trained on clean images may fail on noisy ones — which is exactly why preprocessing (denoising) is Step 2 of the CV pipeline.'},
+  {q:'An edge detection filter produces what output at a flat, uniform area of an image?',opts:['Very bright white pixels','The original colour values unchanged','Near-zero (black) values','The inverse of the colour'],ans:2,exp:'✓ At uniform areas, all neighbours have similar values. Subtracting them from the centre gives nearly zero → black output. Only at edges, where values change sharply, does the filter produce high (bright) values.'},
+];
+let cur=0,score=0;
+function renderQ(){
+  document.getElementById('qbar').style.width=(cur/QS.length*100)+'%';
+  const q=QS[cur];
+  document.getElementById('qbox').innerHTML=`
+    <div class="qcard">
+      <div class="qnum">Question ${cur+1} of ${QS.length}</div>
+      <div class="qtxt">${q.q}</div>
+      <div class="qopts">${q.opts.map((o,i)=>`<button class="qopt" data-i="${i}">${o}</button>`).join('')}</div>
+      <div class="qfb" id="qfb"></div>
+      <button class="qnxt" id="qnxt">${cur<QS.length-1?'Next Question →':'See Results 🎉'}</button>
+    </div>`;
+  document.querySelectorAll('.qopt').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.qopt').forEach(b=>b.disabled=true);
+      const chosen=parseInt(this.dataset.i);
+      const fb=document.getElementById('qfb');
+      if(chosen===q.ans){score++;this.classList.add('ok');fb.className='qfb show g';}
+      else{this.classList.add('no');document.querySelectorAll('.qopt')[q.ans].classList.add('ok');fb.className='qfb show b';}
+      fb.textContent=q.exp;
+      document.getElementById('qnxt').style.display='inline-block';
+    });
+  });
+  document.getElementById('qnxt').addEventListener('click',()=>{cur++;if(cur>=QS.length)showScore();else renderQ();});
+}
+function showScore(){
+  document.getElementById('qbar').style.width='100%';
+  document.getElementById('qbox').innerHTML='';
+  const sc=document.getElementById('qsc');sc.style.display='block';
+  document.getElementById('qbig').textContent=score+'/'+QS.length;
+  const msgs=['Keep revising — start from Concept 01 and work through each topic. 📚','Good effort! Focus on image types, channels and the filter section.','Decent work! Review compression, noise and resolution sections.','Great understanding! Just a couple of gaps to iron out. ✓','Perfect score! Complete mastery of pixel and image concepts. 🌟'];
+  document.getElementById('qmsg').textContent=msgs[Math.min(score,4)<=2?Math.min(score,4):score===QS.length?4:score>=8?3:2];
+  document.getElementById('qrs').addEventListener('click',()=>{cur=0;score=0;sc.style.display='none';document.getElementById('qbar').style.width='0%';renderQ();});
+}
+renderQ();
+</script>
+</body>
+</html>
